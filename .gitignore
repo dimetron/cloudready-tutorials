@@ -1,0 +1,5 @@
+**/.terraform/
+**/reference/
+**/terraform.tfstate
+**/terraform.tfstate.*
+**/plan.json
