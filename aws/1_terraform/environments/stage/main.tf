@@ -2,13 +2,6 @@ terraform {
 	required_version = ">= 0.12, < 0.13"
 }
 
-# Set the variable value in *.tfvars file
-# export DIGITALOCEAN_ACCESS_TOKEN=
-# Configure the DigitalOcean Provider
-provider "digitalocean" {
-  version = "~> 1.9"
-}
-
 provider "aws" {
 	region = "eu-west-1"
   version = "~> 2.0"
@@ -85,10 +78,4 @@ resource "aws_security_group" "out" {
     protocol          = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-}
-
-# Create a new domain using DO API
-resource "digitalocean_domain" "default" {
-    name = "stage.carmonit.com"
-    ip_address = "${aws_instance.example.public_ip}"
 }

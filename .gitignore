@@ -2,4 +2,4 @@
 **/reference/
 **/terraform.tfstate
 **/terraform.tfstate.*
-**/plan.json
+**/plan.out
