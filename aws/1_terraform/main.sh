@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 export RG=eu-west-1
 export OW=099720109477  #099720109477 owner canonical
@@ -52,27 +52,33 @@ cat ./reference/describe-images.json | jq '.Images[].Description'
 
 echo "Creating STAGE ENV"
 cd ./environments/stage/
+
+#initialize terraform plugins
 terraform init
-terraform plan -out plan.json
+
+#create plan 
+terraform plan -out plan.out
 
 echo "Waiting 10 sec .."
 sleep 10
 
-terraform  apply  -auto-approve
+#apply plan from previously created plan
+terraform  apply  -auto-approve plan.out
 terraform  output -json | jq
 
+#get machine IP
 export PUBLIC_IP=`terraform output  -json |  jq -r '.public_ip.value'`
 echo Using PUBLIC_ID=$PUBLIC_IP
 
-sleep 5
+#test access
 echo "++++++++++++++++++++++++"
 nmap -Pn -p22,8080 $PUBLIC_IP
 echo "++++++++++++++++++++++++"
 #curl http://$PUBLIC_IP:8080
 echo "++++++++++++++++++++++++"
 echo "Dont forget to destroy - terraform destroy -force -auto-approve"
-echo "Using: ssh ubuntu@$PUBLIC_IP"
-ssh -o ServerAliveInterval=60 ubuntu@$PUBLIC_IP
+echo "Using: ssh ssh ec2-user@$PUBLIC_IP"
+ssh -o ServerAliveInterval=60 ec2-user@$PUBLIC_IP
 
 echo "All resource will be destroyed 5 sec ...";sleep 5
 terraform  destroy -force -auto-approve 
