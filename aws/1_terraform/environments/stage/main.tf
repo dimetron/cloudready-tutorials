@@ -73,11 +73,20 @@ resource "aws_instance" "example" {
   vpc_security_group_ids = ["${aws_security_group.web.id}", "${aws_security_group.ssh.id}", "${aws_security_group.out.id}"]
 
   user_data = <<-EOF
-            #!/bin/bash
-            sudo yum update  -y
-            sudo yum upgrade -y 
-            sudo yum install -y htop jq git mc docker zsh
-            sh -c "$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+    #!/bin/bash
+    sudo yum update  -y
+    sudo yum upgrade -y 
+    
+    #add epel repository
+    sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    sudo yum-config-manager --enable epel
+    
+    #install docker and other tools
+    sudo amazon-linux-extras install docker -y
+    sudo service docker start
+    sudo usermod -a -G docker ec2-user
+    
+    sudo yum install -y htop jq git mc docker util-linux-user fail2ban  zsh
   EOF
 
   tags = var.default_tags

@@ -4,7 +4,7 @@ export RG=eu-west-1
 export OW=099720109477  #099720109477 owner canonical
 export OW2=137112412989
 
-
+#using commandline to get reference data
 #get list of regions in eu
 if [ ! -f ./reference/describe_ec2_regions.json ]; then
 	aws ec2 describe-regions --filters "Name=endpoint,Values=*eu*" > ./reference/describe_ec2_regions.json
@@ -71,15 +71,34 @@ export PUBLIC_IP=`terraform output  -json |  jq -r '.public_ip.value'`
 echo Using PUBLIC_ID=$PUBLIC_IP
 
 #test access
-echo "++++++++++++++++++++++++"
-nmap -Pn -p22,8080 $PUBLIC_IP
-echo "++++++++++++++++++++++++"
+echo "-----------------------------------"
+echo "Waiting for host to prepare ENV ..."
+
+for retry in {1..10}
+do
+  #test ssh and wait for all tools to install
+  ssh -oStrictHostKeyChecking=no ec2-user@$PUBLIC_IP zsh --version > /dev/null 2>&1
+  if [ $? -eq 0 ]
+  then    
+	#install zsh for ec2-user
+	ssh ec2-user@$PUBLIC_IP 'bash -c "sudo chsh -s /usr/bin/zsh ec2-user"'
+	ssh ec2-user@$PUBLIC_IP 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)" "" --unattended'
+	break
+  fi
+  echo -e "-- retry $retry --"
+  ssh -oStrictHostKeyChecking=no ec2-user@$PUBLIC_IP ps -ef | grep yum | grep -v refused
+  sleep 30
+done
+echo "-----------------------------------"
+
 #curl http://$PUBLIC_IP:8080
-echo "++++++++++++++++++++++++"
 echo "Dont forget to destroy - terraform destroy -force -auto-approve"
-echo "Using: ssh ssh ec2-user@$PUBLIC_IP"
+echo "Using: ssh ec2-user@$PUBLIC_IP"
+echo "-----------------------------------"
+echo "sed -i 's/ZSH_THEME=\"robbyrussell\"/ZSH_THEME=\"agnoster\"/g' /home/ec2-user/.zshrc"
+
 ssh -o ServerAliveInterval=60 ec2-user@$PUBLIC_IP
 
-echo "All resource will be destroyed 5 sec ...";sleep 5
-terraform  destroy -force -auto-approve 
+echo "All resource will be destroyed 5 sec ... Ctrl+C to cancel ...";sleep 5
 sleep 5
+terraform  destroy -force -auto-approve
