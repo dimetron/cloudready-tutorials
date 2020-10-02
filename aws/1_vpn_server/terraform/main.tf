@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 0.12, < 0.13"
+  required_version = ">= 0.13, < 0.14"
 }
 
 provider "aws" {
@@ -11,7 +11,7 @@ data "aws_ami" "amzn2-ami" {
   most_recent = true
   filter {
     name   = "name"
-    values = ["amzn2-ami-hvm-2.0.20190823*"]
+    values = ["amzn2-ami-hvm-2.0.20200904.0-arm64*"]
   }
 
   filter {
@@ -68,7 +68,7 @@ resource "aws_security_group" "out" {
 
 resource "aws_instance" "example" {
   ami                    = "${data.aws_ami.amzn2-ami.id}"
-  instance_type          = "t2.micro"
+  instance_type          = "t4g.micro"
   key_name               = "deployer-key"
   vpc_security_group_ids = ["${aws_security_group.web.id}", "${aws_security_group.ssh.id}", "${aws_security_group.out.id}"]
 
@@ -76,17 +76,10 @@ resource "aws_instance" "example" {
     #!/bin/bash
     sudo yum update  -y
     sudo yum upgrade -y 
-    
-    #add epel repository
-    sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-    sudo yum-config-manager --enable epel
-    
-    #install docker and other tools
-    sudo amazon-linux-extras install docker -y
+    sudo amazon-linux-extras install docker corretto8 -y
     sudo service docker start
-    sudo usermod -a -G docker ec2-user
-    
-    sudo yum install -y htop jq git mc docker util-linux-user fail2ban  zsh
+    sudo usermod -a -G docker ec2-user    
+    sudo yum install -y htop jq git mc docker util-linux-user fail2ban zsh ansible
   EOF
 
   tags = var.default_tags

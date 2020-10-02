@@ -4,6 +4,9 @@ export RG=eu-west-1
 export OW=099720109477  #099720109477 owner canonical
 export OW2=137112412989
 
+#create if not exists
+mkdir -p reference
+
 #using commandline to get reference data
 #get list of regions in eu
 if [ ! -f ./reference/describe_ec2_regions.json ]; then
@@ -21,15 +24,15 @@ if [ ! -f ./reference/describe-images.json ]; then
 			Name=is-public,Values=true \
 			Name=root-device-type,Values=ebs \
 			Name=state,Values=available \
-            Name=name,Values='*ubuntu-bionic-18.04-amd64-server-20180912' \
-            Name=architecture,Values=x86_64  > ./reference/describe-images.json
+            Name=name,Values='*ubuntu-*-20.04-arm64-server-*' \
+            Name=architecture,Values=arm64  > ./reference/describe-images.json
     
     aws ec2 describe-images --region  $RG  --filters \
 			Name=is-public,Values=true \
 			Name=root-device-type,Values=ebs \
 			Name=state,Values=available \
             Name=name,Values='*amzn2-ami-hvm*' \
-            Name=architecture,Values=x86_64  > ./reference/describe-images-amzn2.json
+            Name=architecture,Values=arm64  > ./reference/describe-images-amzn2.json
 
  	aws ec2 describe-images --region  $RG --owners $OW2 --filters \
 			Name=is-public,Values=true \
@@ -39,6 +42,8 @@ if [ ! -f ./reference/describe-images.json ]; then
 	#to get custom tags
 	#aws ec2 describe-images --filters Name=tag-key,Values=Custom Name=tag-value,Values=Linux1,Ubuntu1 --query 'Images[*].{ID:ImageId}'
 fi
+
+sleep 3
 
 # output list of images
 echo '@Regions'
@@ -51,7 +56,7 @@ echo '@Images'
 cat ./reference/describe-images.json | jq '.Images[].Description'
 
 echo "Creating STAGE ENV"
-cd ./environments/stage/
+cd ./terraform
 
 #initialize terraform plugins
 terraform init
