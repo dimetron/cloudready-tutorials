@@ -23,6 +23,6 @@ ECRURL=$(terraform  output -json | jq '.repository_url.value' -r)
 aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin $ECRURL
 
 #build image and push to the registry
-export TAG=2.21
+export TAG=2.22
 docker tag devops-cli:$TAG $ECRURL:$TAG
 docker push $ECRURL:$TAG

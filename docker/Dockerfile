@@ -1,5 +1,6 @@
-FROM amazonlinux:latest
-#FROM registry.fedoraproject.org/fedora-minimal:31-x86_64
+FROM registry.fedoraproject.org/fedora-minimal:31-x86_64
+#FROM amazonlinux:latest
+
 LABEL maintainer="Dmytro Rashko <drashko@me.com>"
 
 ## Environment variables required for this build (do NOT change)
@@ -25,29 +26,29 @@ RUN echo "LANG=en_US.utf-8" >> /etc/environment \
 WORKDIR /root
 
 COPY docker-ce.repo /etc/yum.repos.d/docker-ce.repo 
-RUN echo "Add k6 repo" \ 
+RUN echo "Add k6 and skopeo for amz linux" \
     && curl https://bintray.com/loadimpact/rpm/rpm -o /etc/yum.repos.d/bintray-loadimpact-rpm.repo    \
-    && rpm -ivh https://github.com/wagoodman/dive/releases/download/v0.9.2/dive_0.9.2_linux_amd64.rpm
+    && rpm -ivh https://github.com/wagoodman/dive/releases/download/v0.9.2/dive_0.9.2_linux_amd64.rpm \
+    #&& amazon-linux-extras install epel -y \
+    #&& cd /etc/yum.repos.d \
+    #&& curl -sLo centos-stable.repo https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/CentOS_7/devel:kubic:libcontainers:stable.repo \
+    #&& microdnf -y install yum-plugin-copr \
+    #&& microdnf -y copr enable lsm5/container-selinux \
     #&& rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm                \
+    && microdnf -y update
 
 #Install cli tools
 #https://github.com/containers/buildah/issues/1921
 RUN echo "Installing additional software" \
-    && cd /etc/yum.repos.d \
-    && curl -sLo centos-stable.repo https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/CentOS_7/devel:kubic:libcontainers:stable.repo \
-    && yum -y install yum-plugin-copr \
-    && yum -y copr enable lsm5/container-selinux \
-    && yum -y update \
-    && amazon-linux-extras install ansible2 python3.8 epel -y \
-    && yum -y install --enablerepo=docker-ce-stable yum-utils device-mapper-persistent-data lvm2 sudo \
+    && microdnf -y install --enablerepo=docker-ce-stable yum-utils device-mapper-persistent-data lvm2 sudo \
                 docker-ce-cli which wget zip unzip jq tar passwd openssh openssh-server squid conntrack-tools torsocks iptables \
                 bash sshpass hostname curl ca-certificates libstdc++ ca-certificates bash git zip unzip sed vim-enhanced \
-                sshuttle openssl bash zsh procps rsync mc htop openssh skopeo ansible findutils jq k6 bzip2 shadow-utils iptraf httpie \
-    && rpm -ivh https://packagecloud.io/datawireio/telepresence/packages/fedora/31/telepresence-0.108-1.x86_64.rpm/download.rpm --nodeps \
+                python37 sshuttle openssl bash zsh procps rsync mc htop openssh skopeo ansible findutils jq k6 bzip2 shadow-utils iptraf httpie \
+    #&& rpm -ivh https://packagecloud.io/datawireio/telepresence/packages/fedora/31/telepresence-0.108-1.x86_64.rpm/download.rpm --nodeps \
     #&& pip install --upgrade pip \
     #update python due to CVE' https://alas.aws.amazon.com/AL2/ALAS-2020-1483.html
-    && yum -y update python \
-    && yum -y clean all     \
+    && microdnf -y update python \
+    && microdnf -y clean all     \
     && rm -rf /var/lib/{cache,log} /var/log/lastlog /opt/couchbase/samples /usr/bin/dockerd-ce /usr/bin/containerd \
     && mkdir /var/log/lastlog
 

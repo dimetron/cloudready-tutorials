@@ -1,7 +1,9 @@
 #!/bin/bash
 
+set -e
+
 export IMAGE_NAME=devops-cli
-export IMAGE_VER=2.21
+export IMAGE_VER=2.22
 
 docker build . -t $IMAGE_NAME:$IMAGE_VER
 
