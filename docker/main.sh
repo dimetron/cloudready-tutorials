@@ -3,11 +3,11 @@
 set -e
 
 export IMAGE_NAME=devops-cli
-export IMAGE_VER=2.22
+export IMAGE_VER=2.24
 
 docker build . -t $IMAGE_NAME:$IMAGE_VER
 
-docker rm -f $IMAGE_NAME 
+docker rm -f $IMAGE_NAME || :
 docker run -d --net=host -v /var/run/docker.sock:/var/run/docker.sock --name $IMAGE_NAME $IMAGE_NAME:$IMAGE_VER
 
 docker exec -t $IMAGE_NAME docker images
