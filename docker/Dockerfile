@@ -11,7 +11,7 @@ ENV VERSION_HELM3=3.3.4
 #https://github.com/helm/helm/releases
 
 ENV SDKMAN_DIR=/root/.sdkman
-ENV TERM=xterm-color
+ENV TERM=xterm-256color
 
 ENV HELM2_BASE_URL="https://storage.googleapis.com/kubernetes-helm"
 ENV HELM2_TAR_FILE="helm-v${VERSION_HELM2}-linux-amd64.tar.gz"
@@ -25,27 +25,28 @@ RUN echo "LANG=en_US.utf-8" >> /etc/environment \
 
 WORKDIR /root
 
-COPY docker-ce.repo /etc/yum.repos.d/docker-ce.repo 
+COPY docker-ce.repo /etc/yum.repos.d/docker-ce.repo
 RUN echo "Add k6 and skopeo for amz linux" \
-    && curl https://bintray.com/loadimpact/rpm/rpm -o /etc/yum.repos.d/bintray-loadimpact-rpm.repo    \
-    && rpm -ivh https://github.com/wagoodman/dive/releases/download/v0.9.2/dive_0.9.2_linux_amd64.rpm \
+    && curl https://bintray.com/loadimpact/rpm/rpm -o /etc/yum.repos.d/bintray-loadimpact-rpm.repo
     #&& amazon-linux-extras install epel -y \
     #&& cd /etc/yum.repos.d \
     #&& curl -sLo centos-stable.repo https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/CentOS_7/devel:kubic:libcontainers:stable.repo \
     #&& microdnf -y install yum-plugin-copr \
     #&& microdnf -y copr enable lsm5/container-selinux \
     #&& rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm                \
-    && microdnf -y update
 
 #Install cli tools
 #https://github.com/containers/buildah/issues/1921
 RUN echo "Installing additional software" \
-    && microdnf -y install --enablerepo=docker-ce-stable yum-utils device-mapper-persistent-data lvm2 sudo \
-                docker-ce-cli which wget zip unzip jq tar passwd openssh openssh-server squid conntrack-tools torsocks iptables \
-                bash sshpass hostname curl ca-certificates libstdc++ ca-certificates bash git zip unzip sed vim-enhanced \
-                python37 sshuttle openssl bash zsh procps rsync mc htop openssh skopeo ansible findutils jq k6 bzip2 shadow-utils iptraf httpie \
-    #&& rpm -ivh https://packagecloud.io/datawireio/telepresence/packages/fedora/31/telepresence-0.108-1.x86_64.rpm/download.rpm --nodeps \
-    #&& pip install --upgrade pip \
+    && microdnf -y update  \
+    && microdnf -y install --enablerepo=docker-ce-stable \
+                yum-utils device-mapper-persistent-data lvm2 sudo \
+                docker-ce-cli containerd.io conntrack-tools torsocks iptables \
+                which wget zip unzip jq tar passwd openssl openssh openssh-server squid \
+                bash sshpass hostname curl ca-certificates libstdc++ git zip unzip sed vim-enhanced \
+                python37 sshuttle  bash zsh procps rsync mc htop skopeo ansible findutils jq k6 bzip2 shadow-utils iptraf tcpdump net-tools httpie \
+    && rpm -ivh https://packagecloud.io/datawireio/telepresence/packages/fedora/31/telepresence-0.108-1.x86_64.rpm/download.rpm --nodeps \
+    && pip install --upgrade pip sshuttle \
     #update python due to CVE' https://alas.aws.amazon.com/AL2/ALAS-2020-1483.html
     && microdnf -y update python \
     && microdnf -y clean all     \
@@ -55,12 +56,6 @@ RUN echo "Installing additional software" \
 RUN curl -sLo ./kind "https://github.com/kubernetes-sigs/kind/releases/download/v0.9.0/kind-$(uname)-amd64" \
     && mv kind  /usr/bin \
     && chmod +x /usr/bin/kind
-
-#oc kubectl
-RUN curl -sL "https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-09-18-202631/openshift-client-linux-4.5.0-0.okd-2020-09-18-202631.tar.gz" | tar xvz && \
-    cp oc /usr/bin/ && \
-    cp kubectl /usr/bin/ && \
-    rm -rf  openshift-client-linux-4.5.0-0.okd-2020-09-18-202631*
 
 RUN curl -sL "${HELM2_BASE_URL}/${HELM2_TAR_FILE}" | tar xvz && \
     mv linux-amd64/helm /usr/bin/helm2 && \
@@ -159,6 +154,17 @@ RUN echo "Install JAVA MAVEN" \
 
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.sdkman/bin:/root/.sdkman/candidates/gradle/current/bin:/root/.sdkman/candidates/maven/current/bin:/root/.krew/bin
 
+#oc kubectl - has some slowness
+#RUN curl -sL "https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-09-18-202631/openshift-client-linux-4.5.0-0.okd-2020-09-18-202631.tar.gz" | tar xvz && \
+#    cp oc /usr/bin/ && \
+#    cp kubectl /usr/bin/ && \
+#    rm -rf  openshift-client-linux-4.5.0-0.okd-2020-09-18-202631*
+
+# Add oc
+RUN curl -sL "https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz" | tar xvz && \
+    cp openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/* /usr/bin/ && \
+    rm -rf openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit*
+
 #install krew for kubectl
 #https://github.com/kubernetes-sigs/krew-index/blob/master/plugins.md
 RUN curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew.{tar.gz,yaml}" \
@@ -167,7 +173,6 @@ RUN curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/downloa
     && ./krew-linux_amd64 update \
     && cp ./krew-linux_amd64 /usr/bin/krew && chmod +x /usr/bin/krew \
     && rm -rf krew* \
-    && /usr/bin/krew install get-all \
     && /usr/bin/krew install ctx     \
     && /usr/bin/krew install ns      \
     && /usr/bin/krew install images  \
@@ -192,7 +197,7 @@ RUN echo "Create default ssh keys " \
     && echo 'source <(kubectl completion zsh)' >> .zshrc \
     && echo 'complete -F __start_kubectl k'    >> .zshrc \
     && sed 's/\(^plugins=([^)]*\)/\1 kubectl/' -i .zshrc
-    
+
 #COPY rootfs /
 #ENTRYPOINT ["/entrypoint.sh"]
 RUN groupadd -r devops
