@@ -35,4 +35,5 @@ docker tag devops-cli:$TAG $ECRURL_CLI:$TAG
 docker push $ECRURL_CLI:$TAG
 
 docker pull amazonlinux:latest
-docker push amazonlinux:latest $ECRURL_IMG:$TAG
+docker tag  amazonlinux:latest $ECRURL_IMG:$TAG
+docker push  $ECRURL_IMG:$TAG
