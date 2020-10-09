@@ -108,11 +108,6 @@ RUN curl -sLO "https://github.com/atombender/ktail/releases/download/v0.7.0/ktai
     mv ktail-linux-amd64 /usr/bin/ktail && \
     chmod +x /usr/bin/ktail
 
-#tekton
-RUN curl -sLO "https://github.com/tektoncd/cli/releases/download/v0.12.1/tkn_0.12.1_Linux_x86_64.tar.gz" && \
-    tar xvzf tkn_0.12.1_Linux_x86_64.tar.gz -C /usr/bin tkn && \
-    chmod +x /usr/bin/tkn
-
 #kapp
 RUN curl -sLO "https://github.com/k14s/kapp/releases/download/v0.34.0/kapp-linux-amd64" && \
     mv kapp-linux-amd64 /usr/bin/kapp && \
@@ -122,6 +117,12 @@ RUN curl -sLO "https://github.com/k14s/kapp/releases/download/v0.34.0/kapp-linux
 RUN curl -sLO "https://github.com/k14s/ytt/releases/download/v0.30.0/ytt-linux-amd64" && \
     mv ytt-linux-amd64 /usr/bin/ytt && \
     chmod +x /usr/bin/ytt
+
+#tekton
+RUN curl -sLO "https://github.com/tektoncd/cli/releases/download/v0.12.1/tkn_0.12.1_Linux_x86_64.tar.gz" && \
+    tar xvzf tkn_0.12.1_Linux_x86_64.tar.gz -C /usr/bin tkn && \
+    rm -rd tkn_0.12.1_Linux_x86_64.tar.gz && \
+    chmod +x /usr/bin/tkn
 
 #vault
 RUN curl -sLO "https://releases.hashicorp.com/vault/1.4.3/vault_1.4.3_linux_amd64.zip" && \
@@ -154,29 +155,29 @@ RUN echo "Install JAVA MAVEN" \
 
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.sdkman/bin:/root/.sdkman/candidates/gradle/current/bin:/root/.sdkman/candidates/maven/current/bin:/root/.krew/bin
 
+# Add oc
+RUN curl -sL "https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz" | tar xvz && \
+    cp openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/* /usr/bin/ && \
+    rm -rf openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit*
+
 #oc kubectl - has some slowness
 #RUN curl -sL "https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-09-18-202631/openshift-client-linux-4.5.0-0.okd-2020-09-18-202631.tar.gz" | tar xvz && \
 #    cp oc /usr/bin/ && \
 #    cp kubectl /usr/bin/ && \
 #    rm -rf  openshift-client-linux-4.5.0-0.okd-2020-09-18-202631*
 
-# Add oc
-RUN curl -sL "https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz" | tar xvz && \
-    cp openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/* /usr/bin/ && \
-    rm -rf openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit*
-
-#install krew for kubectl
+#install krew for kubectl - seems depends on latest k
 #https://github.com/kubernetes-sigs/krew-index/blob/master/plugins.md
-RUN curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew.{tar.gz,yaml}" \
-    && tar zxvf krew.tar.gz ; cat krew.yaml \
-    && ./krew-linux_amd64 install --manifest=krew.yaml --archive=krew.tar.gz \
-    && ./krew-linux_amd64 update \
-    && cp ./krew-linux_amd64 /usr/bin/krew && chmod +x /usr/bin/krew \
-    && rm -rf krew* \
-    && /usr/bin/krew install ctx     \
-    && /usr/bin/krew install ns      \
-    && /usr/bin/krew install images  \
-    && /usr/bin/krew list
+#RUN curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew.{tar.gz,yaml}" \
+#    && tar zxvf krew.tar.gz ; cat krew.yaml \
+#    && ./krew-linux_amd64 install --manifest=krew.yaml --archive=krew.tar.gz \
+#    && ./krew-linux_amd64 update \
+#    && cp ./krew-linux_amd64 /usr/bin/krew && chmod +x /usr/bin/krew \
+#    && rm -rf krew* \
+#    && /usr/bin/krew install ctx     \
+#    && /usr/bin/krew install ns      \
+#    && /usr/bin/krew install images  \
+#    && /usr/bin/krew list
 
 #use openssh
 RUN echo "Setup SSH server defaults" \
@@ -187,7 +188,7 @@ RUN echo "Setup SSH server defaults" \
 
 #add dimetron user
 ADD https://github.com/dimetron.keys /root/.ssh/authorized_keys
-
+ADD kubectl.zsh /root/
 RUN echo "Create default ssh keys " \
     && passwd -d root    \
     && ssh-keygen -A     \
@@ -196,6 +197,8 @@ RUN echo "Create default ssh keys " \
     && echo "alias kns='kubectl config set-context --current --namespace'" >> .zshrc \
     && echo 'source <(kubectl completion zsh)' >> .zshrc \
     && echo 'complete -F __start_kubectl k'    >> .zshrc \
+    && echo 'source kubectl.zsh'  >> .zshrc \
+    && echo "RPROMPT='%{\$fg[blue]%}(\$ZSH_KUBECTL_NAMESPACE)%{\$reset_color%}'" >> .zshrc \
     && sed 's/\(^plugins=([^)]*\)/\1 kubectl/' -i .zshrc
 
 #COPY rootfs /
